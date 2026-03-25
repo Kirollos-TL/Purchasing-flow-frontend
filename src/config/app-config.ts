@@ -6,7 +6,7 @@ export interface StyleConfig {
   };
 }
 
-export interface ChatConfig {
+export interface ThemeConfig {
   style: StyleConfig;
   colors: {
     primaryText: string;
@@ -21,16 +21,60 @@ export interface ChatConfig {
     wordsGray: string;
     successGreen: string;
     progressGold: string;
+    creamLight: string;
+  };
+}
+
+export interface CartConfig {
+  title: string;
+  labels: {
+    module: string;
+    quantity: string;
+    price: string;
+    action: string;
+    orderSummary: string;
+    license: string;
+    support: string;
+    total: string;
+    checkout: string;
+    keepBrowsing: string;
+    recommended: string;
+  };
+}
+
+export interface CheckoutConfig {
+  title: string;
+  sections: {
+    accountInfo: string;
+    paymentMethod: string;
+    cardDetails: string;
+    yourModules: string;
+    orderSummary: string;
+  };
+  labels: {
+    fullName: string;
+    email: string;
+    creditCard: string;
+    paypal: string;
+    cardNumber: string;
+    cardholderName: string;
+    expiryDate: string;
+    cvv: string;
+    securityNote: string;
+    termsAgreement: string;
+    getAccess: string;
+    editCart: string;
   };
 }
 
 export interface AppConfig {
-  chat: ChatConfig;
+  theme: ThemeConfig;
+  cart: CartConfig;
+  checkout: CheckoutConfig;
 }
 
 export const APP_CONFIG: AppConfig = {
-  
-  chat: {
+  theme: {
     style: {
       gradients: {
         header: "linear-gradient(360deg, #DDD8BB -68.13%, #858B89 15.94%, #37475C 100%)",
@@ -38,7 +82,6 @@ export const APP_CONFIG: AppConfig = {
         icon: "linear-gradient(90deg, #DBD6BA 0%, #949791 15.87%, #3A495E 68.27%)",
       }
     },
-
     colors: {
       primaryText: "#2B3D55",
       secondaryText: "#737373",
@@ -52,9 +95,52 @@ export const APP_CONFIG: AppConfig = {
       wordsGray: "#949791",
       successGreen: "#00642F",
       progressGold: "#9C6F46",
+      creamLight: "#F8F4DF",
+    },
+  },
+  cart: {
+    title: "Your Cart",
+    labels: {
+      module: "Module Name",
+      quantity: "Quantity",
+      price: "Price",
+      action: "Action",
+      orderSummary: "Order Summary",
+      license: "License Type",
+      support: "Support Plan",
+      total: "Total",
+      checkout: "Check Out Now",
+      keepBrowsing: "Keep Browsing",
+      recommended: "Recommended Modules",
+    },
+  },
+  checkout: {
+    title: "Checkout",
+    sections: {
+      accountInfo: "Account Information",
+      paymentMethod: "Payment Method",
+      cardDetails: "Card Details",
+      yourModules: "Your Modules",
+      orderSummary: "Order Summary",
+    },
+    labels: {
+      fullName: "Full Name",
+      email: "Email Address",
+      creditCard: "Credit / Debit Card",
+      paypal: "PayPal",
+      cardNumber: "Card Number",
+      cardholderName: "Cardholder Name",
+      expiryDate: "MM/YY",
+      cvv: "CVV",
+      securityNote: "Your payment is secure and encrypted",
+      termsAgreement: "I agree to the Terms & Conditions and License Agreement",
+      getAccess: "Get Instant Access",
+      editCart: "Edit Cart",
     },
   }
 };
 
 export default APP_CONFIG;
-export const CHAT_CONFIG: ChatConfig = APP_CONFIG.chat;
+export const THEME_CONFIG: ThemeConfig = APP_CONFIG.theme;
+export const CART_CONFIG: CartConfig = APP_CONFIG.cart;
+export const CHECKOUT_CONFIG: CheckoutConfig = APP_CONFIG.checkout;
