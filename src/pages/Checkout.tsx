@@ -1,4 +1,4 @@
-import { CHECKOUT_CONFIG } from '../config/app-config';
+import { CHECKOUT_CONFIG, MODULES_CONFIG } from '../config/app-config';
 import Header from '../components/Header';
 
 interface CheckoutItemProps {
@@ -22,11 +22,14 @@ const CheckoutItem = ({ name, type, price, description }: CheckoutItemProps) => 
 const Checkout = ({ onEditCart }: { onEditCart: () => void }) => {
   const { title, sections, labels } = CHECKOUT_CONFIG;
 
-  const items = [
-    { name: 'UI Dashboard Kit', type: 'Backend', price: '25', description: 'Admin dashboard components for modern web apps' },
-    { name: 'UI Dashboard Kit', type: 'Backend', price: '25', description: 'Admin dashboard components for modern web apps' },
-    { name: 'UI Dashboard Kit', type: 'Backend', price: '25', description: 'Admin dashboard components for modern web apps' },
-  ];
+  const items = MODULES_CONFIG.map(m => ({
+    name: m.name,
+    type: m.type,
+    price: m.price.toString(),
+    description: m.description
+  }));
+
+  const total = items.reduce((acc, item) => acc + parseInt(item.price), 0);
 
   return (
     <div className="min-h-screen bg-white font-inter">
@@ -35,7 +38,7 @@ const Checkout = ({ onEditCart }: { onEditCart: () => void }) => {
       <main className="max-w-[1400px] mx-auto px-6 md:px-16 py-10 md:py-14">
         <h1 className="text-3xl md:text-4xl font-bold text-primary-text mb-10 md:mb-12 text-center md:text-left">{title}</h1>
 
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_420px] xl:grid-cols-[1fr_480px] gap-10 md:gap-20 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_420px] xl:grid-cols-[1fr_480px] gap-10 md:gap-20 items-stretch">
           {/* Left Column - Forms */}
           <div className="space-y-10 md:space-y-12">
             {/* Account Info */}
@@ -153,7 +156,7 @@ const Checkout = ({ onEditCart }: { onEditCart: () => void }) => {
                 
                 <div className="flex justify-between items-center py-6 mb-8 text-2xl font-bold border-t border-gray-100">
                   <span>Total:</span>
-                  <span className="text-progress-gold">75$</span>
+                  <span className="text-progress-gold">{total}$</span>
                 </div>
                 
                 <button className="w-full py-4 px-6 rounded-xl font-bold text-white bg-button-gradient hover:opacity-90 transition-opacity cursor-pointer shadow-lg shadow-progress-gold/20">

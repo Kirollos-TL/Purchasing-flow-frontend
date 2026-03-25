@@ -29,7 +29,6 @@ export interface CartConfig {
   title: string;
   labels: {
     module: string;
-    quantity: string;
     price: string;
     action: string;
     orderSummary: string;
@@ -67,10 +66,19 @@ export interface CheckoutConfig {
   };
 }
 
+export interface Module {
+  id: number;
+  name: string;
+  type: string;
+  price: number;
+  description: string;
+}
+
 export interface AppConfig {
   theme: ThemeConfig;
   cart: CartConfig;
   checkout: CheckoutConfig;
+  modules: Module[];
 }
 
 export const APP_CONFIG: AppConfig = {
@@ -102,7 +110,6 @@ export const APP_CONFIG: AppConfig = {
     title: "Your Cart",
     labels: {
       module: "Module Name",
-      quantity: "Quantity",
       price: "Price",
       action: "Action",
       orderSummary: "Order Summary",
@@ -137,10 +144,41 @@ export const APP_CONFIG: AppConfig = {
       getAccess: "Get Instant Access",
       editCart: "Edit Cart",
     },
-  }
+  },
+  modules: [
+    {
+      id: 1,
+      name: 'Face Recognition Auth',
+      type: 'Backend',
+      price: 25,
+      description: 'Authenticate users using facial recognition technology.'
+    },
+    {
+      id: 2,
+      name: 'JWT Authentication',
+      type: 'Backend',
+      price: 20,
+      description: 'Secure login system using JSON Web Tokens.'
+    },
+    {
+      id: 3,
+      name: 'Admin Dashboard UI',
+      type: 'Frontend',
+      price: 35,
+      description: 'Interactive dashboard for managing users and data.'
+    },
+    {
+      id: 4,
+      name: 'Email & Push Notifications',
+      type: 'Backend',
+      price: 15,
+      description: 'Send real-time alerts via email and push notifications.'
+    },
+  ]
 };
 
 export default APP_CONFIG;
 export const THEME_CONFIG: ThemeConfig = APP_CONFIG.theme;
 export const CART_CONFIG: CartConfig = APP_CONFIG.cart;
 export const CHECKOUT_CONFIG: CheckoutConfig = APP_CONFIG.checkout;
+export const MODULES_CONFIG: Module[] = APP_CONFIG.modules;
