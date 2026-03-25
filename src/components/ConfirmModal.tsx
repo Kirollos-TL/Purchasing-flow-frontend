@@ -5,9 +5,16 @@ interface ConfirmModalProps {
   onClose: () => void;
   onConfirm: () => void;
   title: string;
+  t?: {
+    title: string;
+    message: string;
+    fromCart: string;
+    cancel: string;
+    delete: string;
+  };
 }
 
-const ConfirmModal = ({ isOpen, onClose, onConfirm, title }: ConfirmModalProps) => {
+const ConfirmModal = ({ isOpen, onClose, onConfirm, title, t }: ConfirmModalProps) => {
   if (!isOpen) return null;
 
   return (
@@ -17,9 +24,9 @@ const ConfirmModal = ({ isOpen, onClose, onConfirm, title }: ConfirmModalProps) 
           <Trash2 size={32} />
         </div>
         
-        <h3 className="text-2xl font-extrabold text-primary-text mb-2">Delete module?</h3>
+        <h3 className="text-2xl font-extrabold text-primary-text mb-2">{t?.title || "Delete module?"}</h3>
         <p className="text-words-gray mb-8">
-          Are you sure you want to remove <span className="font-bold text-primary-text">{title}</span> from your cart?
+          {t?.message || "Are you sure you want to remove"} <span className="font-bold text-primary-text">{title}</span> {t?.fromCart || "from your cart?"}
         </p>
         
         <div className="flex gap-4">
@@ -27,13 +34,13 @@ const ConfirmModal = ({ isOpen, onClose, onConfirm, title }: ConfirmModalProps) 
             onClick={onClose}
             className="flex-1 py-4 px-6 rounded-xl font-bold text-primary-text bg-bg-gray hover:bg-gray-300 transition-colors cursor-pointer"
           >
-            Cancel
+            {t?.cancel || "Cancel"}
           </button>
           <button 
             onClick={onConfirm}
             className="flex-1 py-4 px-6 rounded-xl font-bold text-white bg-red-600 hover:bg-red-700 transition-colors cursor-pointer"
           >
-            Delete
+            {t?.delete || "Delete"}
           </button>
         </div>
       </div>

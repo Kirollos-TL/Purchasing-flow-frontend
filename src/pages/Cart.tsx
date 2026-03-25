@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { Trash2, LayoutGrid } from 'lucide-react';
-import { CART_CONFIG, MODULES_CONFIG } from '../config/app-config';
+
 import ConfirmModal from '../components/ConfirmModal';
 import Header from '../components/Header';
+import { useLanguage } from '../hooks/useLanguage';
 
 interface Item {
   id: number;
@@ -52,9 +53,10 @@ const CartItem = ({
 );
 
 const Cart = ({ onProceedToCheckout }: { onProceedToCheckout: () => void }) => {
-  const { title, labels } = CART_CONFIG;
+  const { t, dir } = useLanguage();
+  const { title, labels } = t.cart;
 
-  const [items, setItems] = useState<Item[]>(MODULES_CONFIG.map(m => ({ 
+  const [items, setItems] = useState<Item[]>(t.modules.map((m: { id: number, name: string, type: string, price: number }) => ({ 
     id: m.id, 
     name: m.name, 
     type: m.type, 
@@ -76,12 +78,13 @@ const Cart = ({ onProceedToCheckout }: { onProceedToCheckout: () => void }) => {
   const total = items.reduce((acc, item) => acc + item.price, 0);
 
   return (
-    <div className="min-h-screen bg-white font-inter">
+    <div className="min-h-screen bg-white font-inter" dir={dir}>
       <ConfirmModal 
         isOpen={confirmDelete.isOpen}
         title={confirmDelete.item?.name || ""}
         onClose={() => setConfirmDelete({ isOpen: false })}
         onConfirm={() => confirmDelete.item && removeItem(confirmDelete.item.id)}
+        t={t.cart.confirmModal}
       />
 
       {/* Header */}
@@ -111,7 +114,7 @@ const Cart = ({ onProceedToCheckout }: { onProceedToCheckout: () => void }) => {
               ))}
               {items.length === 0 && (
                 <div className="py-20 text-center text-words-gray text-xl">
-                  Your cart is empty
+                  {labels.emptyCart}
                 </div>
               )}
             </div>
@@ -125,12 +128,12 @@ const Cart = ({ onProceedToCheckout }: { onProceedToCheckout: () => void }) => {
               <div className="space-y-4 mb-8 md:mb-10">
                 <div className="flex justify-between items-start text-lg">
                   <span className="text-primary-text font-bold">{labels.license}:</span>
-                  <span className="font-normal text-primary-text text-right">Regular</span>
+                  <span className="font-normal text-primary-text text-right">{labels.regular}</span>
                 </div>
                 
                 <div className="flex justify-between items-start text-lg">
                   <span className="text-primary-text font-bold">{labels.support}:</span>
-                  <span className="font-normal text-primary-text text-right">Lifetime</span>
+                  <span className="font-normal text-primary-text text-right">{labels.lifetime}</span>
                 </div>
               </div>
               
@@ -160,7 +163,7 @@ const Cart = ({ onProceedToCheckout }: { onProceedToCheckout: () => void }) => {
           <div className="flex items-center gap-4 mb-8">
             <h2 className="text-2xl font-bold text-primary-text">{labels.recommended}</h2>
             <span className="px-3 py-1 text-xs font-bold uppercase tracking-wider text-progress-gold bg-cream-light border border-progress-gold/20 rounded-full">
-              Coming Soon
+              {labels.comingSoon}
             </span>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">

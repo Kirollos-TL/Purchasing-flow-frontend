@@ -1,8 +1,8 @@
 import { useState, useCallback, useEffect } from 'react';
-import { CHECKOUT_CONFIG, MODULES_CONFIG } from '../config/app-config';
 import { useToast } from '../context/ToastContext';
 import { getCookie } from '../utils/cookie';
 import Header from '../components/Header';
+import { useLanguage } from '../hooks/useLanguage';
 
 // Declaring global GeideaCheckout for TypeScript
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -27,20 +27,21 @@ const CheckoutItem = ({ name, type, price, description }: CheckoutItemProps) => 
 );
 
 const Checkout = ({ onEditCart }: { onEditCart: () => void }) => {
-  const { title, sections, labels } = CHECKOUT_CONFIG;
+  const { t, dir } = useLanguage();
+  const { title, sections, labels, errors } = t.checkout;
   const { showToast } = useToast();
 
   const [loading, setLoading] = useState(false);
   const [pollingId, setPollingId] = useState<string | null>(null);
 
-  const items = MODULES_CONFIG.map(m => ({
+  const items = t.modules.map((m: { name: string, type: string, price: number, description: string }) => ({
     name: m.name,
     type: m.type,
     price: m.price.toString(),
     description: m.description
   }));
 
-  const total = items.reduce((acc, item) => acc + parseInt(item.price), 0);
+  const total = items.reduce((acc: number, item: { price: string }) => acc + parseInt(item.price), 0);
 
   // Poll effect - handles cleanup automatically
   useEffect(() => {
@@ -59,7 +60,7 @@ const Checkout = ({ onEditCart }: { onEditCart: () => void }) => {
           setLoading(false);
           setPollingId(null);
         } else if (++attempts > 20) {
-          showToast("Payment is still processing — check your email for confirmation.", 'info');
+          showToast(errors.emailCheck, 'info');
           setLoading(false);
           setPollingId(null);
         }
@@ -69,7 +70,7 @@ const Checkout = ({ onEditCart }: { onEditCart: () => void }) => {
     }, 2000);
 
     return () => clearInterval(interval);
-  }, [pollingId, showToast]);
+  }, [pollingId, showToast, errors.emailCheck]);
 
   const onSuccess = useCallback(() => {
     const orderId = localStorage.getItem("pending_order_id");
@@ -80,8 +81,8 @@ const Checkout = ({ onEditCart }: { onEditCart: () => void }) => {
   const onError = useCallback((data: any) => {
     console.error("Payment error:", data.responseMessage);
     setLoading(false);
-    showToast(`Payment error: ${data.responseMessage || "Unknown error"}`, 'error');
-  }, [showToast]);
+    showToast(`${errors.paymentError} ${data.responseMessage || errors.unknownError}`, 'error');
+  }, [showToast, errors]);
 
   const onCancel = useCallback(() => {
     console.log("Payment cancelled by user");
@@ -102,7 +103,7 @@ const Checkout = ({ onEditCart }: { onEditCart: () => void }) => {
 
       if (!resp.ok) {
           const err = await resp.json();
-          showToast(`Checkout error: ${err.error || "Failed to initialize session"}`, 'error');
+          showToast(`${errors.checkoutError} ${err.error || errors.initSessionFail}`, 'error');
           setLoading(false);
           return;
       }
@@ -114,14 +115,14 @@ const Checkout = ({ onEditCart }: { onEditCart: () => void }) => {
       payment.startPayment(session_id);
     } catch (error) {
       console.error("Checkout process error:", error);
-      showToast("Something went wrong. Please try again later.", 'error');
+      showToast(errors.processError, 'error');
       setLoading(false);
     }
   };
 
 
   return (
-    <div className="min-h-screen bg-white font-inter">
+    <div className="min-h-screen bg-white font-inter" dir={dir}>
       <Header />
 
       <main className="max-w-[1400px] mx-auto px-6 md:px-16 py-10 md:py-14">
@@ -221,7 +222,7 @@ const Checkout = ({ onEditCart }: { onEditCart: () => void }) => {
               </div>
               <div className="border border-border-gray rounded-2xl p-4 md:p-6 bg-white shadow-sm max-h-[300px] overflow-y-auto custom-scrollbar">
                 <div className="divide-y divide-gray-100">
-                  {items.map((item, index) => (
+                  {items.map((item: { name: string, type: string, price: string, description: string }, index: number) => (
                     <CheckoutItem key={index} {...item} />
                   ))}
                 </div>
@@ -234,17 +235,17 @@ const Checkout = ({ onEditCart }: { onEditCart: () => void }) => {
               <div className="border border-border-gray rounded-2xl p-6 md:p-8 bg-white shadow-sm overflow-hidden">
                 <div className="space-y-3 mb-8">
                   <div className="flex justify-between items-start text-lg">
-                    <span className="text-primary-text font-bold">License:</span>
-                    <span className="font-normal text-primary-text text-right">Regular</span>
+                    <span className="text-primary-text font-bold">{labels.license || "License"}:</span>
+                    <span className="font-normal text-primary-text text-right">{labels.regular || "Regular"}</span>
                   </div>
                   <div className="flex justify-between items-start text-lg">
-                    <span className="text-primary-text font-bold">Access:</span>
-                    <span className="font-normal text-primary-text text-right">Lifetime</span>
+                    <span className="text-primary-text font-bold">{labels.support || "Access"}:</span>
+                    <span className="font-normal text-primary-text text-right">{labels.lifetime || "Lifetime"}</span>
                   </div>
                 </div>
                 
                 <div className="flex justify-between items-center py-6 mb-8 text-2xl font-bold border-t border-gray-100">
-                  <span>Total:</span>
+                  <span>{labels.total}:</span>
                   <span className="text-progress-gold">{total}$</span>
                 </div>
                 
@@ -256,7 +257,7 @@ const Checkout = ({ onEditCart }: { onEditCart: () => void }) => {
                   {loading ? (
                     <>
                       <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      Processing...
+                      {labels.processing}
                     </>
                   ) : labels.getAccess}
                 </button>
