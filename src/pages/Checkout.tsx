@@ -1,5 +1,12 @@
-import { CHECKOUT_CONFIG } from '../config/app-config';
+import { useState, useCallback, useEffect } from 'react';
+import { CHECKOUT_CONFIG, MODULES_CONFIG } from '../config/app-config';
+import { useToast } from '../context/ToastContext';
+import { getCookie } from '../utils/cookie';
 import Header from '../components/Header';
+
+// Declaring global GeideaCheckout for TypeScript
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+declare const GeideaCheckout: any;
 
 interface CheckoutItemProps {
   name: string;
@@ -21,12 +28,97 @@ const CheckoutItem = ({ name, type, price, description }: CheckoutItemProps) => 
 
 const Checkout = ({ onEditCart }: { onEditCart: () => void }) => {
   const { title, sections, labels } = CHECKOUT_CONFIG;
+  const { showToast } = useToast();
 
-  const items = [
-    { name: 'UI Dashboard Kit', type: 'Backend', price: '25', description: 'Admin dashboard components for modern web apps' },
-    { name: 'UI Dashboard Kit', type: 'Backend', price: '25', description: 'Admin dashboard components for modern web apps' },
-    { name: 'UI Dashboard Kit', type: 'Backend', price: '25', description: 'Admin dashboard components for modern web apps' },
-  ];
+  const [loading, setLoading] = useState(false);
+  const [pollingId, setPollingId] = useState<string | null>(null);
+
+  const items = MODULES_CONFIG.map(m => ({
+    name: m.name,
+    type: m.type,
+    price: m.price.toString(),
+    description: m.description
+  }));
+
+  const total = items.reduce((acc, item) => acc + parseInt(item.price), 0);
+
+  // Poll effect - handles cleanup automatically
+  useEffect(() => {
+    if (!pollingId) return;
+
+    let attempts = 0;
+    const interval = setInterval(async () => {
+      try {
+        const resp = await fetch(`/api/orders/${pollingId}/`);
+        const order = await resp.json();
+        
+        if (order.status === "FULFILLED") {
+          window.location.href = `/orders/${pollingId}/success/`;
+        } else if (order.status === "FAILED") {
+          window.location.href = `/orders/${pollingId}/failed/`;
+          setLoading(false);
+          setPollingId(null);
+        } else if (++attempts > 20) {
+          showToast("Payment is still processing — check your email for confirmation.", 'info');
+          setLoading(false);
+          setPollingId(null);
+        }
+      } catch (error) {
+        console.error("Polling error:", error);
+      }
+    }, 2000);
+
+    return () => clearInterval(interval);
+  }, [pollingId, showToast]);
+
+  const onSuccess = useCallback(() => {
+    const orderId = localStorage.getItem("pending_order_id");
+    if (orderId) setPollingId(orderId);
+  }, []);
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const onError = useCallback((data: any) => {
+    console.error("Payment error:", data.responseMessage);
+    setLoading(false);
+    showToast(`Payment error: ${data.responseMessage || "Unknown error"}`, 'error');
+  }, [showToast]);
+
+  const onCancel = useCallback(() => {
+    console.log("Payment cancelled by user");
+    setLoading(false);
+  }, []);
+
+  const handleCheckout = async () => {
+    setLoading(true);
+    try {
+      const resp = await fetch("/api/checkout/", {
+          method: "POST",
+          headers: {
+              "Content-Type": "application/json",
+              "X-CSRFToken": getCookie("csrftoken") || "",
+          },
+          body: JSON.stringify({}),
+      });
+
+      if (!resp.ok) {
+          const err = await resp.json();
+          showToast(`Checkout error: ${err.error || "Failed to initialize session"}`, 'error');
+          setLoading(false);
+          return;
+      }
+
+      const { order_id, session_id } = await resp.json();
+      localStorage.setItem("pending_order_id", order_id);
+
+      const payment = new GeideaCheckout(onSuccess, onError, onCancel);
+      payment.startPayment(session_id);
+    } catch (error) {
+      console.error("Checkout process error:", error);
+      showToast("Something went wrong. Please try again later.", 'error');
+      setLoading(false);
+    }
+  };
+
 
   return (
     <div className="min-h-screen bg-white font-inter">
@@ -35,7 +127,7 @@ const Checkout = ({ onEditCart }: { onEditCart: () => void }) => {
       <main className="max-w-[1400px] mx-auto px-6 md:px-16 py-10 md:py-14">
         <h1 className="text-3xl md:text-4xl font-bold text-primary-text mb-10 md:mb-12 text-center md:text-left">{title}</h1>
 
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_420px] xl:grid-cols-[1fr_480px] gap-10 md:gap-20 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_420px] xl:grid-cols-[1fr_480px] gap-10 md:gap-20 items-stretch">
           {/* Left Column - Forms */}
           <div className="space-y-10 md:space-y-12">
             {/* Account Info */}
@@ -142,22 +234,31 @@ const Checkout = ({ onEditCart }: { onEditCart: () => void }) => {
               <div className="border border-border-gray rounded-2xl p-6 md:p-8 bg-white shadow-sm overflow-hidden">
                 <div className="space-y-3 mb-8">
                   <div className="flex justify-between items-start text-lg">
-                    <span className="text-primary-text font-normal">License:</span>
-                    <span className="font-bold text-primary-text text-right">Regular</span>
+                    <span className="text-primary-text font-bold">License:</span>
+                    <span className="font-normal text-primary-text text-right">Regular</span>
                   </div>
                   <div className="flex justify-between items-start text-lg">
-                    <span className="text-primary-text font-normal">Support:</span>
-                    <span className="font-bold text-primary-text text-right">Lifetime Access</span>
+                    <span className="text-primary-text font-bold">Access:</span>
+                    <span className="font-normal text-primary-text text-right">Lifetime</span>
                   </div>
                 </div>
                 
                 <div className="flex justify-between items-center py-6 mb-8 text-2xl font-bold border-t border-gray-100">
                   <span>Total:</span>
-                  <span className="text-progress-gold">75$</span>
+                  <span className="text-progress-gold">{total}$</span>
                 </div>
                 
-                <button className="w-full py-4 px-6 rounded-xl font-bold text-white bg-button-gradient hover:opacity-90 transition-opacity cursor-pointer shadow-lg shadow-progress-gold/20">
-                  {labels.getAccess}
+                <button 
+                  onClick={handleCheckout}
+                  disabled={loading}
+                  className={`w-full py-4 px-6 rounded-xl font-bold text-white bg-button-gradient transition-all cursor-pointer shadow-lg shadow-progress-gold/20 flex items-center justify-center gap-2 ${loading ? 'opacity-70 cursor-not-allowed' : 'hover:opacity-90'}`}
+                >
+                  {loading ? (
+                    <>
+                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      Processing...
+                    </>
+                  ) : labels.getAccess}
                 </button>
               </div>
             </section>
