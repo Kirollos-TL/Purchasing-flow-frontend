@@ -1,4 +1,7 @@
-import { CHECKOUT_CONFIG } from '../config/app-config';
+import { useState, useCallback, useEffect } from 'react';
+import { CHECKOUT_CONFIG, MODULES_CONFIG } from '../config/app-config';
+import { useToast } from '../context/ToastContext';
+import { getCookie } from '../utils/cookie';
 import Header from '../components/Header';
 
 // Declaring global GeideaCheckout for TypeScript
@@ -25,12 +28,97 @@ const CheckoutItem = ({ name, type, price, description }: CheckoutItemProps) => 
 
 const Checkout = ({ onEditCart }: { onEditCart: () => void }) => {
   const { title, sections, labels } = CHECKOUT_CONFIG;
+  const { showToast } = useToast();
 
-  const items = [
-    { name: 'UI Dashboard Kit', type: 'Backend', price: '25', description: 'Admin dashboard components for modern web apps' },
-    { name: 'UI Dashboard Kit', type: 'Backend', price: '25', description: 'Admin dashboard components for modern web apps' },
-    { name: 'UI Dashboard Kit', type: 'Backend', price: '25', description: 'Admin dashboard components for modern web apps' },
-  ];
+  const [loading, setLoading] = useState(false);
+  const [pollingId, setPollingId] = useState<string | null>(null);
+
+  const items = MODULES_CONFIG.map(m => ({
+    name: m.name,
+    type: m.type,
+    price: m.price.toString(),
+    description: m.description
+  }));
+
+  const total = items.reduce((acc, item) => acc + parseInt(item.price), 0);
+
+  // Poll effect - handles cleanup automatically
+  useEffect(() => {
+    if (!pollingId) return;
+
+    let attempts = 0;
+    const interval = setInterval(async () => {
+      try {
+        const resp = await fetch(`/api/orders/${pollingId}/`);
+        const order = await resp.json();
+        
+        if (order.status === "FULFILLED") {
+          window.location.href = `/orders/${pollingId}/success/`;
+        } else if (order.status === "FAILED") {
+          window.location.href = `/orders/${pollingId}/failed/`;
+          setLoading(false);
+          setPollingId(null);
+        } else if (++attempts > 20) {
+          showToast("Payment is still processing — check your email for confirmation.", 'info');
+          setLoading(false);
+          setPollingId(null);
+        }
+      } catch (error) {
+        console.error("Polling error:", error);
+      }
+    }, 2000);
+
+    return () => clearInterval(interval);
+  }, [pollingId, showToast]);
+
+  const onSuccess = useCallback(() => {
+    const orderId = localStorage.getItem("pending_order_id");
+    if (orderId) setPollingId(orderId);
+  }, []);
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const onError = useCallback((data: any) => {
+    console.error("Payment error:", data.responseMessage);
+    setLoading(false);
+    showToast(`Payment error: ${data.responseMessage || "Unknown error"}`, 'error');
+  }, [showToast]);
+
+  const onCancel = useCallback(() => {
+    console.log("Payment cancelled by user");
+    setLoading(false);
+  }, []);
+
+  const handleCheckout = async () => {
+    setLoading(true);
+    try {
+      const resp = await fetch("/api/checkout/", {
+          method: "POST",
+          headers: {
+              "Content-Type": "application/json",
+              "X-CSRFToken": getCookie("csrftoken") || "",
+          },
+          body: JSON.stringify({}),
+      });
+
+      if (!resp.ok) {
+          const err = await resp.json();
+          showToast(`Checkout error: ${err.error || "Failed to initialize session"}`, 'error');
+          setLoading(false);
+          return;
+      }
+
+      const { order_id, session_id } = await resp.json();
+      localStorage.setItem("pending_order_id", order_id);
+
+      const payment = new GeideaCheckout(onSuccess, onError, onCancel);
+      payment.startPayment(session_id);
+    } catch (error) {
+      console.error("Checkout process error:", error);
+      showToast("Something went wrong. Please try again later.", 'error');
+      setLoading(false);
+    }
+  };
+
 
   return (
     <div className="min-h-screen bg-white font-inter">
