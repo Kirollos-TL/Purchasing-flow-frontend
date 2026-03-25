@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import Cart from '../pages/Cart';
 import Checkout from '../pages/Checkout';
 import ConfigStyles from '../components/ConfigStyles';
